@@ -1,0 +1,17 @@
+﻿@model LoginInfo
+
+<form asp-action="LoginInput" asp-controller="Home" method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <div>
+        <label asp-for="Username">Username:</label>
+        <input asp-for="Username" class="form-control" />
+        <span asp-validation-for="Username" class="text-danger"></span>
+    </div>
+
+    <div>
+        <label asp-for="Password">Password:</label>
+        <input asp-for="Password" class="form-control" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+    <input type="submit" value="Login" class="btn btn-success" />
+</form>
