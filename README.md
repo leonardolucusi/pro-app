@@ -17,7 +17,7 @@ Este é um sistema de login que utiliza tokens JWT para autenticação e autoriz
 ## Instalação
 
 Clone o repositório:
-- git clone https://github.com/seu-usuario/seu-projeto.git
+- git clone https://github.com/leonardolucusi/pro-app.git
 
 - Configure a string de conexão com o banco de dados em appsettings.json.
 
