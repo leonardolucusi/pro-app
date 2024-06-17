@@ -5,7 +5,7 @@ namespace ProApp.Models
 {
     public class User
     {
-        public int UserId { get; set; }
+        public int? UserId { get; set; }
         [Required(ErrorMessage = "O campo Username é obrigatório.")]
         public string? Username { get; set; }
 

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using ProApp.Data;
 using ProApp.Models;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
@@ -13,11 +14,13 @@ namespace ProApp.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IConfiguration _configuration;
+        private readonly Context _context;
 
-        public HomeController(ILogger<HomeController> logger, IConfiguration configuration)
+        public HomeController(ILogger<HomeController> logger, IConfiguration configuration, Context context)
         {
             _logger = logger;
             _configuration = configuration;
+            _context = context;
         }
 
         public IActionResult Index()
@@ -41,25 +44,43 @@ namespace ProApp.Controllers
             return View();
         }
 
+        public IActionResult Register()
+        {
+            return View();
+        }
+
         [HttpPost]
-        public IActionResult LoginInput(LoginInfo loginInfo)
+        public IActionResult RegisterUser(User user)
         {
             if (ModelState.IsValid)
             {
-                if (loginInfo.Username == "leo" && loginInfo.Password == "123")
+                _context.Users.Add(user);
+                _context.SaveChanges();
+                return Ok();
+            }
+            return BadRequest();
+        }
+
+        [HttpPost]
+        public IActionResult LoginInput(LoginInfo user)
+        {
+            if (ModelState.IsValid)
+            {
+                var userToBeFound = _context.Users.FirstOrDefault(u => u.Username == user.Username && u.Password == user.Password);
+
+                if (userToBeFound != null)
                 {
-                    var token = GenerateJwtToken(loginInfo.Username);
-                    //HttpContext.Session.SetString("JwtToken", token);
+                    var token = GenerateJwtToken(user.Username);
+
                     HttpContext.Response.Cookies.Append("JwtToken", token, new CookieOptions
                     {
                         HttpOnly = false
                     });
-                    return Ok(new { token });
-                    //return RedirectToAction("Index", "ProtectedRoute");
+                    return Redirect(Url.Action("ProtectedRoute", "Home"));
                 }
                 ModelState.AddModelError("", "Invalid Credentials");
             }
-            return View("Login", loginInfo);
+            return View("Login", user);
         }
 
         private string GenerateJwtToken(string username)
@@ -69,7 +90,11 @@ namespace ProApp.Controllers
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, username) }),
+                Subject = new ClaimsIdentity(new[]
+                {
+                new Claim(ClaimTypes.Name, username),
+                new Claim("username", username)
+            }),
                 Expires = DateTime.UtcNow.AddSeconds(30),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
@@ -82,7 +107,36 @@ namespace ProApp.Controllers
         [Authorize]
         public IActionResult ProtectedRoute()
         {
-            return View();
+            var token = Request.Cookies["JwtToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                return Unauthorized("Token is missing");
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            try
+            {
+                var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
+                if (jsonToken == null) return Unauthorized("Invalid token.");
+
+                foreach (var claim in jsonToken.Claims)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Claim Type: {claim.Type}, Claim Value: {claim.Value}");
+                }
+                var usernameClaim = jsonToken.Claims.FirstOrDefault(claim => claim.Type == "username");
+                if (usernameClaim == null)
+                {
+                    return Unauthorized("Username not found in token.");
+                }
+
+                ViewBag.Username = usernameClaim.Value;
+
+                return View();
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized($"Error processing token: {ex.Message}");
+            }
         }
     }
 }
