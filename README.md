@@ -4,6 +4,7 @@ Este é um sistema de login que utiliza tokens JWT para autenticação e autoriz
 
 ### Recursos Principais:
 - Autenticação baseada em tokens JWT
+- Senha com Hash Bcrypt
 - Autorização de usuários
 - Desenvolvido com MVC
 - Usando .NET Core 8
