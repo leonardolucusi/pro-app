@@ -2,9 +2,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ProApp.Data;
+using ProApp.Data.IoC;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDependencyInjection();
 
 builder.Services.AddCors(options =>
 {
@@ -19,7 +22,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.Cookie.HttpOnly = false;
+    options.Cookie.HttpOnly = true;
 });
 
 builder.Services.AddDbContext<Context>(options =>

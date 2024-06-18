@@ -1,6 +1,7 @@
-﻿@model LoginInfo
-
-<form asp-action="LoginInput" asp-controller="Home" method="post">
+﻿@using ProApp.Models.Entities
+@model UserLogin;
+<h1>Login</h1>
+<form asp-action="LoginUser" asp-controller="Home" method="post">
     <div asp-validation-summary="All" class="text-danger"></div>
     <div>
         <label asp-for="Username">Username:</label>

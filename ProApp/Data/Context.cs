@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using ProApp.Models;
+using ProApp.Models.Entities;
 
 namespace ProApp.Data
 {

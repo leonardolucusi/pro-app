@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace ProApp.Models
+namespace ProApp.Models.Entities
 {
-    public class LoginInfo
+    public class UserLogin
     {
         [Required(ErrorMessage = "O campo Username é obrigatório.")]
         public string? Username { get; set; }

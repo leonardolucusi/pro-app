@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using ProApp.Data;
 using ProApp.Models;
+using ProApp.Models.Entities;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -50,10 +51,22 @@ namespace ProApp.Controllers
         }
 
         [HttpPost]
-        public IActionResult RegisterUser(User user)
+        public IActionResult RegisterUser(UserRegister userRegister)
         {
             if (ModelState.IsValid)
             {
+                var userToFind = _context.Users.FirstOrDefault(u => u.Username == userRegister.Username);
+                if (userToFind != null)
+                {
+                    if (userRegister.Username == userToFind.Username) { return BadRequest("Username already exists"); }
+                }
+
+                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(userRegister.Password);
+                var user = new User
+                {
+                    Username = userRegister.Username,
+                    Password = hashedPassword
+                };
                 _context.Users.Add(user);
                 _context.SaveChanges();
                 return Ok();
@@ -62,25 +75,44 @@ namespace ProApp.Controllers
         }
 
         [HttpPost]
-        public IActionResult LoginInput(LoginInfo user)
+        public IActionResult LoginUser(UserLogin user)
         {
             if (ModelState.IsValid)
             {
-                var userToBeFound = _context.Users.FirstOrDefault(u => u.Username == user.Username && u.Password == user.Password);
+                var userToBeFound = _context.Users.FirstOrDefault(u => u.Username == user.Username);
 
-                if (userToBeFound != null)
+                if (userToBeFound != null && BCrypt.Net.BCrypt.Verify(user.Password, userToBeFound.Password))
                 {
                     var token = GenerateJwtToken(user.Username);
 
                     HttpContext.Response.Cookies.Append("JwtToken", token, new CookieOptions
                     {
-                        HttpOnly = false
+                        HttpOnly = true,
+                        Secure = true
                     });
                     return Redirect(Url.Action("ProtectedRoute", "Home"));
                 }
                 ModelState.AddModelError("", "Invalid Credentials");
             }
             return View("Login", user);
+            //if (ModelState.IsValid)
+            //{
+            //    var userToBeFound = _context.Users.FirstOrDefault(u => u.Username == user.Username && u.Password == user.Password);
+
+            //    if (userToBeFound != null)
+            //    {
+            //        var token = GenerateJwtToken(user.Username);
+
+            //        HttpContext.Response.Cookies.Append("JwtToken", token, new CookieOptions
+            //        {
+            //            HttpOnly = true,
+            //            Secure = true
+            //        });
+            //        return Redirect(Url.Action("ProtectedRoute", "Home"));
+            //    }
+            //    ModelState.AddModelError("", "Invalid Credentials");
+            //}
+            //return View("Login", user);
         }
 
         private string GenerateJwtToken(string username)
@@ -121,7 +153,7 @@ namespace ProApp.Controllers
 
                 foreach (var claim in jsonToken.Claims)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Claim Type: {claim.Type}, Claim Value: {claim.Value}");
+                    Debug.WriteLine($"Claim Type: {claim.Type}, Claim Value: {claim.Value}");
                 }
                 var usernameClaim = jsonToken.Claims.FirstOrDefault(claim => claim.Type == "username");
                 if (usernameClaim == null)
