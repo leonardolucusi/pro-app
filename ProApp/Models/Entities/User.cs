@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace ProApp.Models.Entities
 {
@@ -11,7 +10,5 @@ namespace ProApp.Models.Entities
 
         [Required(ErrorMessage = "The field Password is obligatory")]
         public string? Password { get; set; }
-        [HiddenInput(DisplayValue = false)]
-        public string? RefreshToken { get; set; }
     }
 }

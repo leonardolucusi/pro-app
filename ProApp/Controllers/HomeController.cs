@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using ProApp.Data;
 using ProApp.Models;
 using ProApp.Models.Entities;
+using ProApp.Models.IRepositories;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -15,13 +15,13 @@ namespace ProApp.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IConfiguration _configuration;
-        private readonly Context _context;
+        private readonly IUserRepository _userRepository;
 
-        public HomeController(ILogger<HomeController> logger, IConfiguration configuration, Context context)
+        public HomeController(ILogger<HomeController> logger, IConfiguration configuration, IUserRepository userRepository)
         {
             _logger = logger;
             _configuration = configuration;
-            _context = context;
+            _userRepository = userRepository;
         }
 
         public IActionResult Index()
@@ -51,14 +51,17 @@ namespace ProApp.Controllers
         }
 
         [HttpPost]
-        public IActionResult RegisterUser(UserRegister userRegister)
+        public async Task<IActionResult> RegisterUser(UserRegister userRegister)
         {
             if (ModelState.IsValid)
             {
-                var userToFind = _context.Users.FirstOrDefault(u => u.Username == userRegister.Username);
-                if (userToFind != null)
+                var userToBeFound = await _userRepository.FindUserByUsername(userRegister.Username);
+                if (userToBeFound != null)
                 {
-                    if (userRegister.Username == userToFind.Username) { return BadRequest("Username already exists"); }
+                    if (userRegister.Username == userToBeFound.Username)
+                    {
+                        return BadRequest("Username already exists");
+                    }
                 }
 
                 var hashedPassword = BCrypt.Net.BCrypt.HashPassword(userRegister.Password);
@@ -67,19 +70,19 @@ namespace ProApp.Controllers
                     Username = userRegister.Username,
                     Password = hashedPassword
                 };
-                _context.Users.Add(user);
-                _context.SaveChanges();
-                return Ok();
+                await _userRepository.AddUser(user);
+                return Redirect(Url.Action("Login", "Home"));
             }
             return BadRequest();
         }
 
         [HttpPost]
-        public IActionResult LoginUser(UserLogin user)
+        public async Task<IActionResult> LoginUser(UserLogin user)
         {
             if (ModelState.IsValid)
             {
-                var userToBeFound = _context.Users.FirstOrDefault(u => u.Username == user.Username);
+
+                var userToBeFound = await _userRepository.FindUserByUsername(user.Username);
 
                 if (userToBeFound != null && BCrypt.Net.BCrypt.Verify(user.Password, userToBeFound.Password))
                 {
@@ -95,24 +98,6 @@ namespace ProApp.Controllers
                 ModelState.AddModelError("", "Invalid Credentials");
             }
             return View("Login", user);
-            //if (ModelState.IsValid)
-            //{
-            //    var userToBeFound = _context.Users.FirstOrDefault(u => u.Username == user.Username && u.Password == user.Password);
-
-            //    if (userToBeFound != null)
-            //    {
-            //        var token = GenerateJwtToken(user.Username);
-
-            //        HttpContext.Response.Cookies.Append("JwtToken", token, new CookieOptions
-            //        {
-            //            HttpOnly = true,
-            //            Secure = true
-            //        });
-            //        return Redirect(Url.Action("ProtectedRoute", "Home"));
-            //    }
-            //    ModelState.AddModelError("", "Invalid Credentials");
-            //}
-            //return View("Login", user);
         }
 
         private string GenerateJwtToken(string username)
