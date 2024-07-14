@@ -13,13 +13,11 @@ namespace ProApp.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
         private readonly IConfiguration _configuration;
         private readonly IUserRepository _userRepository;
 
-        public HomeController(ILogger<HomeController> logger, IConfiguration configuration, IUserRepository userRepository)
+        public HomeController(IConfiguration configuration, IUserRepository userRepository)
         {
-            _logger = logger;
             _configuration = configuration;
             _userRepository = userRepository;
         }
